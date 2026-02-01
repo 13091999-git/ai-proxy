@@ -16,17 +16,15 @@ app.post("/ask", async (req, res) => {
     const { prompt, model } = req.body;
 
     if (!prompt || !model) {
-      return res.status(400).json({
-        error: "Devi fornire prompt e model"
-      });
+      return res.status(400).json({ error: "prompt e model obbligatori" });
     }
 
-    const hfResponse = await fetch(
-      `https://router.huggingface.co/hf-inference/models/${model}`,
+    const response = await fetch(
+      `https://api-inference.huggingface.co/models/${model}`,
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.HF_TOKEN}`,
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -39,7 +37,7 @@ app.post("/ask", async (req, res) => {
       }
     );
 
-    const text = await hfResponse.text();
+    const text = await response.text();
 
     try {
       res.json(JSON.parse(text));
@@ -52,7 +50,7 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server avviato");
 });
