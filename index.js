@@ -20,7 +20,7 @@ app.post("/ask", async (req, res) => {
     }
 
     const response = await fetch(
-      `https://api-inference.huggingface.co/models/${model}`,
+      `https://router.huggingface.co/models/${model}`,
       {
         method: "POST",
         headers: {
