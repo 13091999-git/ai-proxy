@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("AI proxy attivo");
+  res.send("AI proxy attivo (HF Router)");
 });
 
 app.post("/ask", async (req, res) => {
@@ -16,34 +16,32 @@ app.post("/ask", async (req, res) => {
     const { prompt, model } = req.body;
 
     if (!prompt || !model) {
-      return res.status(400).json({ error: "prompt e model obbligatori" });
+      return res.status(400).json({
+        error: "prompt e model obbligatori"
+      });
     }
 
-    const response = await fetch(
-      `https://router.huggingface.co/models/${model}`,
+    const hfResponse = await fetch(
+      "https://router.huggingface.co/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Authorization": `Bearer ${process.env.HF_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 300,
-            temperature: 0.7
-          }
+          model: model,
+          messages: [
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 300,
+          temperature: 0.7
         })
       }
     );
 
-    const text = await response.text();
-
-    try {
-      res.json(JSON.parse(text));
-    } catch {
-      res.json({ raw: text });
-    }
+    const data = await hfResponse.json();
+    res.json(data);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
