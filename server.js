@@ -33,8 +33,9 @@ app.post("/ask", async (req, res) => {
   trimMemory();
 
   try {
+    // NUOVO ENDPOINT ROUTER
     const hfResponse = await fetch(
-      `https://api-inference.huggingface.co/models/${model}/v1/chat/completions`,
+      "https://router.huggingface.co/v1/chat/completions", 
       {
         method: "POST",
         headers: {
@@ -42,7 +43,7 @@ app.post("/ask", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: model,
+          model: model, // Il modello ora viene passato qui
           messages: conversation,
           max_tokens: 800,
           stream: false
@@ -52,16 +53,15 @@ app.post("/ask", async (req, res) => {
 
     const data = await hfResponse.json();
 
-    // Se Hugging Face restituisce un errore (es. 401, 429, 503)
     if (data.error) {
       console.error("HF Error:", data.error);
-      return res.status(500).json({ error: `Hugging Face: ${data.error}` });
+      return res.status(500).json({ error: `Hugging Face dice: ${data.error.message || data.error}` });
     }
 
     const answer = data?.choices?.[0]?.message?.content;
 
     if (!answer) {
-      return res.status(500).json({ error: "Risposta vuota dal modello." });
+      return res.status(500).json({ error: "Il modello ha risposto ma non contiene testo." });
     }
 
     conversation.push({ role: "assistant", content: answer });
