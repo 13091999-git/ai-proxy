@@ -3,26 +3,52 @@ import fetch from "node-fetch";
 import cors from "cors";
 
 const app = express();
-
-// middleware
 app.use(cors());
 app.use(express.json());
 
-// test base
-app.get("/", (req, res) => {
-  res.send("AI proxy attivo su Render");
-});
+/* =========================
+   MEMORIA CONVERSAZIONE
+   ========================= */
 
-// POST /ask
+let conversation = [
+  {
+    role: "system",
+    content: "Sei un assistente AI chiaro, diretto e tecnico."
+  }
+];
+
+const MAX_MESSAGES = 20; // limite memoria
+
+function trimMemory() {
+  // mantiene system + ultimi messaggi
+  if (conversation.length > MAX_MESSAGES) {
+    conversation = [
+      conversation[0],
+      ...conversation.slice(-MAX_MESSAGES + 1)
+    ];
+  }
+}
+
+/* =========================
+   ENDPOINT CHAT
+   ========================= */
+
 app.post("/ask", async (req, res) => {
+  const { question, model } = req.body;
+
+  if (!question || !model) {
+    return res.status(400).json({ error: "Parametri mancanti" });
+  }
+
+  // aggiunge domanda
+  conversation.push({
+    role: "user",
+    content: question
+  });
+
+  trimMemory();
+
   try {
-    const { prompt, model } = req.body;
-
-    if (!prompt || !model) {
-      return res.status(400).json({ error: "prompt e model obbligatori" });
-    }
-
-    // costruisce la richiesta per Hugging Face Router
     const hfResponse = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
       {
@@ -33,30 +59,52 @@ app.post("/ask", async (req, res) => {
         },
         body: JSON.stringify({
           model: model,
-          messages: [
-            { role: "system", content: "You are a helpful assistant." },
-            { role: "user", content: prompt }
-          ]
+          messages: conversation,
+          max_tokens: 500
         })
       }
     );
 
-    // parse JSON della risposta
     const data = await hfResponse.json();
 
-    // estrai il testo della risposta
-    const text = data?.choices?.[0]?.message?.content;
+    const answer =
+      data?.choices?.[0]?.message?.content ??
+      "Modello non ha restituito testo.";
 
-    if (text === undefined) {
-      return res.json({ text: "Modello non ha dato output testuale" });
-    }
-    return res.json({ text });
+    // salva risposta
+    conversation.push({
+      role: "assistant",
+      content: answer
+    });
+
+    trimMemory();
+
+    res.json({ answer });
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// porta
+/* =========================
+   RESET CHAT
+   ========================= */
+
+app.post("/reset", (req, res) => {
+  conversation = [
+    {
+      role: "system",
+      content: "Sei un assistente AI chiaro, diretto e tecnico."
+    }
+  ];
+  res.json({ status: "Chat resettata" });
+});
+
+/* =========================
+   AVVIO SERVER
+   ========================= */
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server avviato"));
+app.listen(PORT, () => {
+  console.log("Server attivo sulla porta", PORT);
+});
