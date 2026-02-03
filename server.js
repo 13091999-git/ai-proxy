@@ -7,16 +7,10 @@ app.use(cors());
 app.use(express.json());
 
 let conversation = [
-  { role: "system", content: "Sei un assistente AI professionale e tecnico." }
+  { role: "system", content: "Sei un assistente AI gestito tramite Ollama." }
 ];
 
 const MAX_MESSAGES = 15;
-
-function trimMemory() {
-  if (conversation.length > MAX_MESSAGES) {
-    conversation = [conversation[0], ...conversation.slice(-MAX_MESSAGES + 1)];
-  }
-}
 
 app.post("/ask", async (req, res) => {
   const { question, model } = req.body;
@@ -26,45 +20,51 @@ app.post("/ask", async (req, res) => {
   }
 
   conversation.push({ role: "user", content: question });
-  trimMemory();
 
   try {
-    const response = await fetch("https://api.together.xyz/v1/chat/completions", {
+    // Ollama usa /api/chat per mantenere il contesto dei messaggi
+    const response = await fetch(`${process.env.OLLAMA_BASE_URL}/api/chat`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.TOGETHER_API_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        // Molti provider Ollama Cloud usano Authorization, se il tuo è locale lascialo o ignoralo
+        "Authorization": `Bearer ${process.env.OLLAMA_API_KEY || ''}`
       },
       body: JSON.stringify({
         model: model,
         messages: conversation,
-        max_tokens: 1024,
-        temperature: 0.7
+        stream: false // Disabilitiamo lo streaming per semplicità
       })
     });
 
     const data = await response.json();
 
     if (data.error) {
-      return res.status(500).json({ error: data.error.message });
+      throw new Error(data.error);
     }
 
-    const answer = data.choices?.[0]?.message?.content || "Nessun output dal modello.";
+    // Ollama restituisce la risposta in data.message.content
+    const answer = data.message?.content || "Nessuna risposta ricevuta.";
 
     conversation.push({ role: "assistant", content: answer });
-    trimMemory();
+
+    // Trim memoria
+    if (conversation.length > MAX_MESSAGES) {
+      conversation = [conversation[0], ...conversation.slice(-MAX_MESSAGES)];
+    }
 
     res.json({ answer });
 
   } catch (err) {
-    res.status(500).json({ error: "Errore di connessione a Together AI" });
+    console.error("Ollama Error:", err);
+    res.status(500).json({ error: "Errore di connessione a Ollama: " + err.message });
   }
 });
 
 app.post("/reset", (req, res) => {
-  conversation = [{ role: "system", content: "Sei un assistente AI professionale e tecnico." }];
+  conversation = [{ role: "system", content: "Sei un assistente AI gestito tramite Ollama." }];
   res.json({ status: "Chat resettata" });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server Cloud Ollama attivo su porta ${PORT}`));
+app.listen(PORT, () => console.log("Server Ollama Cloud attivo"));
