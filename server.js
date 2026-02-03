@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
-const OLLAMA_URL = "https://api.ollama.com/v1/chat/completions";
+const OLLAMA_URL = "https://api.ollama.ai/v1/chat/completions";
 
 // 🧠 memoria chat (semplice, limitata)
 let chatHistory = [];
