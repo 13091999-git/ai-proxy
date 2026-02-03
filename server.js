@@ -9,24 +9,24 @@ app.use(express.json());
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const OLLAMA_URL = "https://api.ollama.ai/v1/chat/completions";
 
-// 🧠 memoria chat (semplice, limitata)
 let chatHistory = [];
 const MAX_MESSAGES = 10;
 
-// 🔹 ASK
 app.post("/ask", async (req, res) => {
-  const { question, model } = req.body;
-
-  if (!question || !model) {
-    return res.status(400).json({ error: "Parametri mancanti" });
-  }
-
-  chatHistory.push({ role: "user", content: question });
-  if (chatHistory.length > MAX_MESSAGES * 2) {
-    chatHistory = chatHistory.slice(-MAX_MESSAGES * 2);
-  }
-
   try {
+    const { question, model } = req.body;
+
+    if (!OLLAMA_API_KEY) {
+      return res.status(500).json({ error: "API key Ollama mancante" });
+    }
+
+    if (!question || !model) {
+      return res.status(400).json({ error: "Parametri mancanti" });
+    }
+
+    chatHistory.push({ role: "user", content: question });
+    chatHistory = chatHistory.slice(-MAX_MESSAGES * 2);
+
     const ollamaRes = await fetch(OLLAMA_URL, {
       method: "POST",
       headers: {
@@ -35,27 +35,39 @@ app.post("/ask", async (req, res) => {
       },
       body: JSON.stringify({
         model,
-        messages: chatHistory,
-        temperature: 0.7
+        messages: chatHistory
       })
     });
 
-    const data = await ollamaRes.json();
+    const rawText = await ollamaRes.text();
+
+    // 🔎 LOG CRITICO
+    console.log("OLLAMA STATUS:", ollamaRes.status);
+    console.log("OLLAMA RAW RESPONSE:", rawText);
+
+    if (!ollamaRes.ok) {
+      return res.status(500).json({
+        error: "Errore Ollama Cloud",
+        details: rawText
+      });
+    }
+
+    const data = JSON.parse(rawText);
 
     const answer =
-      data.choices?.[0]?.message?.content ?? "Nessuna risposta dal modello";
+      data.choices?.[0]?.message?.content ??
+      "Il modello non ha restituito testo";
 
     chatHistory.push({ role: "assistant", content: answer });
 
     res.json({ answer });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Errore Ollama Cloud" });
+    console.error("SERVER ERROR:", err);
+    res.status(500).json({ error: "Errore interno server" });
   }
 });
 
-// 🔹 RESET
 app.post("/reset", (req, res) => {
   chatHistory = [];
   res.json({ status: "ok" });
@@ -63,5 +75,5 @@ app.post("/reset", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Ollama proxy attivo su porta", PORT);
+  console.log("Server Ollama attivo su porta", PORT);
 });
