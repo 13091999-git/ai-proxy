@@ -24,8 +24,8 @@ app.post('/api/chat', async (req, res) => {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                "HTTP-Referer": process.env.SITE_URL || "http://localhost",
-                "X-Title": process.env.SITE_NAME || "Local Dev",
+                "HTTP-Referer": process.env.SITE_URL,
+                "X-Title": process.env.SITE_NAME,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
