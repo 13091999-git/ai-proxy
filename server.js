@@ -11,31 +11,28 @@ app.use(cors());
 // 2. Middleware per parsare il JSON
 app.use(express.json());
 
-// 3. Endpoint per la chat
+// 3. Endpoint per la chat con supporto memoria
 app.post('/api/chat', async (req, res) => {
     try {
-        const userMessage = req.body.message;
+        // Riceviamo l'intera cronologia (array di oggetti) dal frontend
+        const messagesHistory = req.body.messages;
 
-        if (!userMessage) {
-            return res.status(400).json({ error: 'Messaggio richiesto' });
+        if (!messagesHistory || !Array.isArray(messagesHistory)) {
+            return res.status(400).json({ error: 'Formato cronologia non valido' });
         }
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                "HTTP-Referer": process.env.SITE_URL,
-                "X-Title": process.env.SITE_NAME,
+                "HTTP-Referer": process.env.SITE_URL || "http://localhost",
+                "X-Title": process.env.SITE_NAME || "Local Dev",
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "openai/gpt-3.5-turbo", // O qualsiasi modello gratuito/pagato su OpenRouter, es. "mistralai/mistral-7b-instruct:free"
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": userMessage
-                    }
-                ]
+                "model": "openai/gpt-3.5-turbo", // O il modello che preferisci
+                // Passiamo direttamente la cronologia completa all'API
+                "messages": messagesHistory 
             })
         });
 
@@ -46,7 +43,7 @@ app.post('/api/chat', async (req, res) => {
 
         const data = await response.json();
         
-        // Restituisce solo il contenuto del messaggio al frontend
+        // Restituiamo solo l'ultima risposta generata
         res.json({ 
             reply: data.choices[0].message.content 
         });
