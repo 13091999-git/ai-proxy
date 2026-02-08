@@ -30,7 +30,7 @@ app.post('/api/chat', async (req, res) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "openai/gpt-3.5-turbo", // O il modello che preferisci
+                "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
                 // Passiamo direttamente la cronologia completa all'API
                 "messages": messagesHistory 
             })
