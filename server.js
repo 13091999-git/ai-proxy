@@ -5,17 +5,16 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 1. Abilita CORS per permettere al tuo frontend statico di fare richieste
+// Abilita CORS
 app.use(cors());
-
-// 2. Middleware per parsare il JSON
 app.use(express.json());
 
-// 3. Endpoint per la chat con supporto memoria
+// Endpoint per la chat
 app.post('/api/chat', async (req, res) => {
     try {
-        // Riceviamo l'intera cronologia (array di oggetti) dal frontend
         const messagesHistory = req.body.messages;
+        // Legge il modello selezionato, se non c'è usa quello di default
+        const selectedModel = req.body.model || "z-ai/glm-4.5-air:free";
 
         if (!messagesHistory || !Array.isArray(messagesHistory)) {
             return res.status(400).json({ error: 'Formato cronologia non valido' });
@@ -30,9 +29,8 @@ app.post('/api/chat', async (req, res) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "z-ai/glm-4.5-air:free",
-                // Passiamo direttamente la cronologia completa all'API
-                "messages": messagesHistory 
+                "model": selectedModel, // Usa il modello inviato dal frontend
+                "messages": messagesHistory
             })
         });
 
@@ -43,7 +41,6 @@ app.post('/api/chat', async (req, res) => {
 
         const data = await response.json();
         
-        // Restituiamo solo l'ultima risposta generata
         res.json({ 
             reply: data.choices[0].message.content 
         });
@@ -54,7 +51,6 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Avvio del server
 app.listen(PORT, () => {
     console.log(`Server in ascolto sulla porta ${PORT}`);
 });
