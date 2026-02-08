@@ -30,7 +30,7 @@ app.post('/api/chat', async (req, res) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+                "model": "openrouter/free",
                 // Passiamo direttamente la cronologia completa all'API
                 "messages": messagesHistory 
             })
