@@ -30,7 +30,7 @@ app.post('/api/chat', async (req, res) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "openrouter/free",
+                "model": "qwen/qwen3-coder:free",
                 // Passiamo direttamente la cronologia completa all'API
                 "messages": messagesHistory 
             })
