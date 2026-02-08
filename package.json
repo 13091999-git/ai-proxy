@@ -1,7 +1,7 @@
 {
-  "name": "openrouter-backend",
+  "name": "space-ai-backend",
   "version": "1.0.0",
-  "description": "Backend Node.js per Chat con OpenRouter su Render",
+  "description": "Backend per Chat AI con selezione modello",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
