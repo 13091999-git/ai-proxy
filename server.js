@@ -30,7 +30,7 @@ app.post('/api/chat', async (req, res) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "qwen/qwen3-coder:free",
+                "model": "z-ai/glm-4.5-air:free",
                 // Passiamo direttamente la cronologia completa all'API
                 "messages": messagesHistory 
             })
